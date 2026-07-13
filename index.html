@@ -190,8 +190,8 @@ footer{
     <span class="lp-status" id="lpStatus">Not connected — add a free API key to go live.</span>
     <div class="lp-help">
       Get a free key at <a href="https://twelvedata.com/pricing" target="_blank" rel="noopener">twelvedata.com</a> (800 requests/day, no card required).
-      Paste it above and click <b>Save Key</b> — it's stored only in this browser's local storage, never sent anywhere but Twelve Data's API.
-      Anthropic has no public ticker yet, so that row stays manual. In Claude.ai's own artifact preview, saved keys may not persist between visits — once self-hosted, they will.
+      Your key and all portfolio edits auto-save to this browser's local storage as you type — nothing sent anywhere but Twelve Data's API.
+      Anthropic has no public ticker yet, so that row stays manual. In Claude.ai's own artifact preview, saved data may not persist between visits — once self-hosted, it will.
     </div>
   </div>
 
@@ -218,11 +218,27 @@ let assets = [
   { name:"Anthropic (post-IPO)", ticker:"ANTH", price:250.00, shares:10, note:"Placeholder — no public listing yet; edit when/if it IPOs", livePricing:false, prevPrice:null },
 ];
 
+try {
+  const saved = JSON.parse(localStorage.getItem('portfolioFlowAssets') || 'null');
+  if (Array.isArray(saved) && saved.length === assets.length){
+    assets = assets.map((a, i) => ({ ...a, ...saved[i], prevPrice: null }));
+  }
+} catch(e) {}
+
+function persistAssets(){
+  try {
+    localStorage.setItem('portfolioFlowAssets', JSON.stringify(
+      assets.map(a => ({ name:a.name, ticker:a.ticker, price:a.price, shares:a.shares, livePricing:a.livePricing }))
+    ));
+  } catch(e) {}
+}
+
 /* ================= LIVE PRICE FETCHING (Twelve Data API) ================= */
 let apiKey = '';
 let autoRefreshTimer = null;
+const DEFAULT_API_KEY = '1536d045d276413abcd9b65a6c491844';
 
-try { apiKey = localStorage.getItem('portfolioFlowApiKey') || ''; } catch(e) {}
+try { apiKey = localStorage.getItem('portfolioFlowApiKey') || DEFAULT_API_KEY; } catch(e) { apiKey = DEFAULT_API_KEY; }
 
 function setStatus(msg, kind){
   const el = document.getElementById('lpStatus');
@@ -264,6 +280,7 @@ async function fetchLivePrices(){
 
     renderCards();
     renderTotals();
+    persistAssets();
 
     const stamp = new Date().toLocaleTimeString();
     if (updated && !failed.length){
@@ -282,9 +299,18 @@ function initLivePanel(){
   const keyInput = document.getElementById('apiKeyInput');
   keyInput.value = apiKey;
 
-  document.getElementById('saveKeyBtn').addEventListener('click', () => {
+  function saveKey(){
     apiKey = keyInput.value.trim();
     try { localStorage.setItem('portfolioFlowApiKey', apiKey); } catch(e) {}
+  }
+
+  keyInput.addEventListener('input', () => {
+    saveKey();
+    setStatus(apiKey ? 'Key auto-saved.' : 'Key cleared.');
+  });
+
+  document.getElementById('saveKeyBtn').addEventListener('click', () => {
+    saveKey();
     setStatus(apiKey ? 'Key saved.' : 'Key cleared.');
   });
 
@@ -306,7 +332,7 @@ function initLivePanel(){
     }
   });
 
-  if (apiKey) setStatus('Key loaded from this browser — click Refresh Now to fetch.');
+  if (apiKey) setStatus('Key preloaded — click Refresh Now to fetch.');
 }
 
 function fmt(n, d=2){ return n.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d}); }
@@ -359,6 +385,7 @@ function renderCards(){
       const i = +e.target.dataset.toggleI;
       assets[i].livePricing = !assets[i].livePricing;
       renderCards();
+      persistAssets();
     });
   });
 
@@ -370,6 +397,7 @@ function renderCards(){
       assets[i][f] = v;
       renderCards();
       renderTotals();
+      persistAssets();
     });
   });
 }
@@ -493,15 +521,15 @@ function drawFlow(){
   // center node — total portfolio
   const pulse = 1 + Math.sin(Date.now()/500) * 0.04;
   ctx.beginPath();
-  ctx.arc(cx, cy, 46*pulse, 0, Math.PI*2);
-  const coreGrad = ctx.createRadialGradient(cx,cy,0,cx,cy,46*pulse);
+  ctx.arc(cx, cy, 56*pulse, 0, Math.PI*2);
+  const coreGrad = ctx.createRadialGradient(cx,cy,0,cx,cy,56*pulse);
   coreGrad.addColorStop(0, 'rgba(212,175,55,0.35)');
   coreGrad.addColorStop(1, 'rgba(212,175,55,0.02)');
   ctx.fillStyle = coreGrad;
   ctx.fill();
 
   ctx.beginPath();
-  ctx.arc(cx, cy, 30, 0, Math.PI*2);
+  ctx.arc(cx, cy, 38, 0, Math.PI*2);
   ctx.fillStyle = 'rgba(10,10,12,0.9)';
   ctx.strokeStyle = 'rgba(212,175,55,0.6)';
   ctx.lineWidth = 1.5;
@@ -509,12 +537,12 @@ function drawFlow(){
   ctx.stroke();
 
   ctx.fillStyle = '#f1f0f5';
-  ctx.font = '700 11px "JetBrains Mono", monospace';
+  ctx.font = '700 13px "JetBrains Mono", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('PORTFOLIO', cx, cy - 2);
-  ctx.font = '600 9px "JetBrains Mono", monospace';
+  ctx.fillText('PORTFOLIO', cx, cy - 3);
+  ctx.font = '600 11px "JetBrains Mono", monospace';
   ctx.fillStyle = '#d4af37';
-  ctx.fillText('$' + fmt0(tot), cx, cy + 11);
+  ctx.fillText('$' + fmt0(tot), cx, cy + 13);
 
   // asset node labels
   assets.forEach((a, i) => {
@@ -522,7 +550,7 @@ function drawFlow(){
     const pct = vals[i] / tot * 100;
 
     ctx.beginPath();
-    ctx.arc(node.x, node.y, 22, 0, Math.PI*2);
+    ctx.arc(node.x, node.y, 30, 0, Math.PI*2);
     ctx.fillStyle = 'rgba(8,8,10,0.92)';
     ctx.strokeStyle = COLORS[i];
     ctx.lineWidth = 2;
@@ -533,22 +561,22 @@ function drawFlow(){
     ctx.stroke();
 
     ctx.fillStyle = COLORS[i];
-    ctx.font = '700 10.5px "JetBrains Mono", monospace';
-    ctx.fillText(a.ticker, node.x, node.y + 4);
+    ctx.font = '700 13px "JetBrains Mono", monospace';
+    ctx.fillText(a.ticker, node.x, node.y + 4.5);
 
     // label outside node
-    const labelDist = 34;
+    const labelDist = 44;
     const dx = node.x - cx, dy = node.y - cy;
     const len = Math.sqrt(dx*dx+dy*dy) || 1;
     const lx = node.x + (dx/len) * labelDist;
     const ly = node.y + (dy/len) * labelDist;
 
-    ctx.font = '600 11px "Inter", sans-serif';
+    ctx.font = '600 12.5px "Inter", sans-serif';
     ctx.fillStyle = '#e8e8ec';
     ctx.fillText(a.name.length > 20 ? a.name.slice(0,18)+'…' : a.name, lx, ly);
-    ctx.font = '500 10px "JetBrains Mono", monospace';
+    ctx.font = '500 11px "JetBrains Mono", monospace';
     ctx.fillStyle = '#8a8794';
-    ctx.fillText(pct.toFixed(1) + '%  ·  $' + fmt0(vals[i]), lx, ly + 13);
+    ctx.fillText(pct.toFixed(1) + '%  ·  $' + fmt0(vals[i]), lx, ly + 14);
   });
 }
 
