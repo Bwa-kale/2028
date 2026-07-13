@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SCORPIO FLOW — Portfolio Vault</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root{
+  --bg:#050505;
+  --gold:#d4af37;
+  --violet:#8b5cf6;
+  --neon:#39ff8f;
+  --cyan:#4ecdc4;
+  --pink:#ff5e9c;
+  --card:rgba(255,255,255,0.035);
+  --border:rgba(255,255,255,0.08);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(139,92,246,0.10), transparent 55%),
+    radial-gradient(ellipse at 85% 15%, rgba(212,175,55,0.08), transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(57,255,143,0.05), transparent 60%),
+    var(--bg);
+  color:#e8e8ec;
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  padding:24px 16px 60px;
+}
+.wrap{max-width:1180px; margin:0 auto;}
+
+header{text-align:center; margin-bottom:28px;}
+.eyebrow{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px; letter-spacing:4px; color:var(--gold);
+  text-transform:uppercase; opacity:0.85;
+}
+h1{
+  font-family:'Orbitron',sans-serif; font-weight:900;
+  font-size:clamp(28px,5vw,44px);
+  background:linear-gradient(90deg,var(--gold),#fff8e0,var(--violet));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  margin:6px 0 8px; letter-spacing:1px;
+}
+.sub{color:#9a97a6; font-size:13.5px;}
+
+.totalbar{
+  display:flex; justify-content:center; gap:34px; flex-wrap:wrap;
+  margin:22px 0 10px; font-family:'JetBrains Mono',monospace;
+}
+.totalbar .stat{text-align:center;}
+.totalbar .stat .v{font-size:22px; font-weight:700;}
+.totalbar .stat .l{font-size:10px; color:#8a8794; letter-spacing:2px; text-transform:uppercase; margin-top:3px;}
+.pos{color:var(--neon);} .neg{color:#ff6b6b;}
+
+/* ===== FLOW CHART — the centerpiece ===== */
+.flow-panel{
+  position:relative;
+  background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:10px;
+  margin:26px 0 34px;
+  box-shadow:0 0 60px rgba(139,92,246,0.06) inset, 0 20px 60px rgba(0,0,0,0.5);
+  overflow:hidden;
+}
+.flow-panel::before{
+  content:"LIVE ALLOCATION FLOW";
+  position:absolute; top:16px; left:22px;
+  font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:3px;
+  color:#77738a; z-index:5;
+}
+#flowCanvas{display:block; width:100%; height:560px; border-radius:18px;}
+
+/* ===== Asset cards ===== */
+.grid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:14px; margin-bottom:30px;
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:16px 16px 14px;
+  backdrop-filter:blur(10px);
+  position:relative;
+  transition:transform .2s ease, border-color .2s ease;
+}
+.card:hover{transform:translateY(-3px); border-color:rgba(255,255,255,0.18);}
+.card .dot{width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:7px; box-shadow:0 0 10px currentColor;}
+.card .name{font-weight:600; font-size:14.5px;}
+.card .ticker{font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a8794; margin-left:2px;}
+.card .row{display:flex; justify-content:space-between; align-items:center; margin-top:10px; gap:8px;}
+.card label{font-size:10px; letter-spacing:1.5px; color:#7d7a8c; text-transform:uppercase;}
+.card input{
+  background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px;
+  color:#f1f0f5; font-family:'JetBrains Mono',monospace; font-size:13px;
+  padding:6px 8px; width:100%; text-align:right;
+}
+.card input:focus{outline:none; border-color:var(--violet);}
+.card .value{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:18px; margin-top:10px;}
+.card .alloc{font-size:11px; color:#9a97a6; margin-top:2px;}
+.card .note{font-size:10px; color:#77738a; margin-top:8px; font-style:italic; line-height:1.4;}
+
+.namefield{
+  width:100%; background:transparent; border:none; border-bottom:1px dashed transparent;
+  color:#f1f0f5; font-family:'Inter'; font-weight:600; font-size:14.5px; padding:0;
+}
+.namefield:hover, .namefield:focus{border-bottom-color:var(--border); outline:none;}
+.tickerfield{
+  background:transparent; border:none; color:#8a8794; font-family:'JetBrains Mono',monospace;
+  font-size:11px; width:60px; padding:0;
+}
+.tickerfield:focus{outline:none;}
+
+footer{
+  text-align:center; margin-top:10px; font-size:11px; color:#65627a;
+  font-family:'JetBrains Mono',monospace; line-height:1.7;
+}
+.refresh-note{color:var(--gold); opacity:0.8;}
+
+/* ===== Live price control panel ===== */
+.live-panel{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:14px 18px;
+  margin-bottom:20px;
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  backdrop-filter:blur(10px);
+}
+.live-panel .lp-title{
+  font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px;
+  color:var(--gold); text-transform:uppercase; white-space:nowrap;
+}
+.live-panel input[type="password"], .live-panel input[type="text"]{
+  background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px;
+  color:#f1f0f5; font-family:'JetBrains Mono',monospace; font-size:12.5px;
+  padding:8px 10px; flex:1; min-width:160px;
+}
+.live-panel input:focus{outline:none; border-color:var(--violet);}
+.btn{
+  font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:1px;
+  border:1px solid var(--border); border-radius:8px; padding:8px 14px;
+  background:rgba(255,255,255,0.06); color:#e8e8ec; cursor:pointer;
+  transition:all .15s ease; white-space:nowrap;
+}
+.btn:hover{background:rgba(255,255,255,0.12); border-color:var(--violet);}
+.btn.active{background:rgba(57,255,143,0.15); border-color:var(--neon); color:var(--neon);}
+.lp-status{font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a8794; min-width:150px;}
+.lp-status.err{color:#ff6b6b;}
+.lp-status.ok{color:var(--neon);}
+.lp-help{
+  font-size:10.5px; color:#77738a; width:100%; line-height:1.6; margin-top:2px;
+}
+.lp-help a{color:var(--cyan);}
+.badge-live{
+  font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:1px;
+  padding:1px 6px; border-radius:20px; margin-left:6px; vertical-align:middle;
+  background:rgba(57,255,143,0.12); color:var(--neon); border:1px solid rgba(57,255,143,0.35);
+}
+.badge-manual{
+  font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:1px;
+  padding:1px 6px; border-radius:20px; margin-left:6px; vertical-align:middle;
+  background:rgba(255,255,255,0.05); color:#8a8794; border:1px solid var(--border);
+}
+.pricechange{font-size:10px; margin-left:6px;}
+.pricechange.up{color:var(--neon);}
+.pricechange.down{color:#ff6b6b;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">THE MAXIMUS PLAN · VAULT MODULE</div>
+    <h1>SCORPIO FLOW</h1>
+    <div class="sub">Five-asset conviction book · editable holdings · prices as of Jul 12, 2026</div>
+  </header>
+
+  <div class="totalbar" id="totalbar"></div>
+
+  <div class="live-panel">
+    <span class="lp-title">Live Prices</span>
+    <input type="password" id="apiKeyInput" placeholder="Twelve Data API key">
+    <button class="btn" id="saveKeyBtn">Save Key</button>
+    <button class="btn" id="refreshBtn">Refresh Now</button>
+    <button class="btn" id="autoBtn">Auto-Refresh: Off</button>
+    <span class="lp-status" id="lpStatus">Not connected — add a free API key to go live.</span>
+    <div class="lp-help">
+      Get a free key at <a href="https://twelvedata.com/pricing" target="_blank" rel="noopener">twelvedata.com</a> (800 requests/day, no card required).
+      Paste it above and click <b>Save Key</b> — it's stored only in this browser's local storage, never sent anywhere but Twelve Data's API.
+      Anthropic has no public ticker yet, so that row stays manual. In Claude.ai's own artifact preview, saved keys may not persist between visits — once self-hosted, they will.
+    </div>
+  </div>
+
+  <div class="flow-panel">
+    <canvas id="flowCanvas"></canvas>
+  </div>
+
+  <div class="grid" id="cardGrid"></div>
+
+  <footer>
+    Starting prices captured Jul 10–12, 2026 close/last-trade — connect a free Twelve Data key above to pull live quotes, or edit any field manually.<br>
+    Anthropic has no public ticker as of this date; its row stays MANUAL until it has one.
+  </footer>
+</div>
+
+<script>
+const COLORS = ['#d4af37', '#8b5cf6', '#39ff8f', '#4ecdc4', '#ff5e9c'];
+
+let assets = [
+  { name:"SpaceX", ticker:"SPCX", price:145.30, shares:20, note:"Nasdaq debut Jun 2026 · Starlink + Grok AI + launch services", livePricing:true, prevPrice:null },
+  { name:"Palantir", ticker:"PLTR", price:126.60, shares:25, note:"AI/defense software · down ~36% off ATH, still growth thesis", livePricing:true, prevPrice:null },
+  { name:"AST SpaceMobile", ticker:"ASTS", price:73.32, shares:40, note:"Direct-to-device satellite · BlueBird 11 launch Aug 2026", livePricing:true, prevPrice:null },
+  { name:"Roundhill Memory ETF", ticker:"DRAM", price:62.99, shares:30, note:"AI memory chip basket · SK Hynix, Samsung, Micron, Sandisk", livePricing:true, prevPrice:null },
+  { name:"Anthropic (post-IPO)", ticker:"ANTH", price:250.00, shares:10, note:"Placeholder — no public listing yet; edit when/if it IPOs", livePricing:false, prevPrice:null },
+];
+
+/* ================= LIVE PRICE FETCHING (Twelve Data API) ================= */
+let apiKey = '';
+let autoRefreshTimer = null;
+
+try { apiKey = localStorage.getItem('portfolioFlowApiKey') || ''; } catch(e) {}
+
+function setStatus(msg, kind){
+  const el = document.getElementById('lpStatus');
+  el.textContent = msg;
+  el.className = 'lp-status' + (kind ? ' ' + kind : '');
+}
+
+async function fetchLivePrices(){
+  if (!apiKey){
+    setStatus('Add and save an API key first.', 'err');
+    return;
+  }
+  const tickers = assets.filter(a => a.livePricing).map(a => a.ticker);
+  if (!tickers.length){
+    setStatus('No live-priced assets to refresh.', 'err');
+    return;
+  }
+  setStatus('Refreshing…');
+  try{
+    const symbolParam = tickers.join(',');
+    const res = await fetch(`https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbolParam)}&apikey=${encodeURIComponent(apiKey)}`);
+    const data = await res.json();
+
+    // Twelve Data returns a single object for 1 symbol, or {SYMBOL: {...}} for multiple
+    const quotes = tickers.length === 1 ? { [tickers[0]]: data } : data;
+
+    let updated = 0, failed = [];
+    assets.forEach(a => {
+      if (!a.livePricing) return;
+      const q = quotes[a.ticker];
+      if (q && q.close && !q.code){
+        a.prevPrice = a.price;
+        a.price = parseFloat(q.close);
+        updated++;
+      } else {
+        failed.push(a.ticker);
+      }
+    });
+
+    renderCards();
+    renderTotals();
+
+    const stamp = new Date().toLocaleTimeString();
+    if (updated && !failed.length){
+      setStatus(`Updated ${updated} price${updated>1?'s':''} at ${stamp}`, 'ok');
+    } else if (updated && failed.length){
+      setStatus(`Updated ${updated}, failed: ${failed.join(', ')} at ${stamp}`, 'err');
+    } else {
+      setStatus(`No prices returned — check symbols/key. ${JSON.stringify(data).slice(0,80)}`, 'err');
+    }
+  } catch(err){
+    setStatus('Network/API error: ' + err.message, 'err');
+  }
+}
+
+function initLivePanel(){
+  const keyInput = document.getElementById('apiKeyInput');
+  keyInput.value = apiKey;
+
+  document.getElementById('saveKeyBtn').addEventListener('click', () => {
+    apiKey = keyInput.value.trim();
+    try { localStorage.setItem('portfolioFlowApiKey', apiKey); } catch(e) {}
+    setStatus(apiKey ? 'Key saved.' : 'Key cleared.');
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', fetchLivePrices);
+
+  const autoBtn = document.getElementById('autoBtn');
+  autoBtn.addEventListener('click', () => {
+    if (autoRefreshTimer){
+      clearInterval(autoRefreshTimer);
+      autoRefreshTimer = null;
+      autoBtn.textContent = 'Auto-Refresh: Off';
+      autoBtn.classList.remove('active');
+      setStatus('Auto-refresh stopped.');
+    } else {
+      autoRefreshTimer = setInterval(fetchLivePrices, 60000);
+      autoBtn.textContent = 'Auto-Refresh: On (60s)';
+      autoBtn.classList.add('active');
+      fetchLivePrices();
+    }
+  });
+
+  if (apiKey) setStatus('Key loaded from this browser — click Refresh Now to fetch.');
+}
+
+function fmt(n, d=2){ return n.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d}); }
+function fmt0(n){ return Math.round(n).toLocaleString('en-US'); }
+
+function values(){ return assets.map(a => a.price * a.shares); }
+function total(){ return values().reduce((a,b)=>a+b, 0); }
+
+function renderCards(){
+  const grid = document.getElementById('cardGrid');
+  grid.innerHTML = '';
+  const vals = values();
+  const tot = total() || 1;
+  assets.forEach((a, i) => {
+    const val = vals[i];
+    const pct = (val / tot * 100);
+    let changeHtml = '';
+    if (a.prevPrice != null && a.prevPrice !== a.price){
+      const diff = a.price - a.prevPrice;
+      const pct = (diff / a.prevPrice * 100).toFixed(2);
+      changeHtml = `<span class="pricechange ${diff>=0?'up':'down'}">${diff>=0?'▲':'▼'} ${Math.abs(pct)}%</span>`;
+    }
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div>
+        <span class="dot" style="background:${COLORS[i]}; color:${COLORS[i]}"></span>
+        <input class="namefield" data-i="${i}" data-f="name" value="${a.name}">
+        <span class="${a.livePricing ? 'badge-live' : 'badge-manual'}" style="cursor:pointer" data-toggle-i="${i}" title="Click to toggle live/manual pricing">${a.livePricing ? 'LIVE' : 'MANUAL'}</span>
+      </div>
+      <input class="tickerfield" data-i="${i}" data-f="ticker" value="${a.ticker}">
+      <div class="row">
+        <label>Price ($)</label>
+        <input type="number" step="0.01" data-i="${i}" data-f="price" value="${a.price}">
+      </div>
+      ${changeHtml ? `<div style="text-align:right; margin-top:2px;">${changeHtml}</div>` : ''}
+      <div class="row">
+        <label>Shares</label>
+        <input type="number" step="1" data-i="${i}" data-f="shares" value="${a.shares}">
+      </div>
+      <div class="value" style="color:${COLORS[i]}">$${fmt(val)}</div>
+      <div class="alloc">${pct.toFixed(1)}% of portfolio</div>
+      <div class="note">${a.note}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  grid.querySelectorAll('[data-toggle-i]').forEach(badge => {
+    badge.addEventListener('click', e => {
+      const i = +e.target.dataset.toggleI;
+      assets[i].livePricing = !assets[i].livePricing;
+      renderCards();
+    });
+  });
+
+  grid.querySelectorAll('input[data-f]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const i = +e.target.dataset.i, f = e.target.dataset.f;
+      let v = e.target.value;
+      if (f === 'price' || f === 'shares') v = parseFloat(v) || 0;
+      assets[i][f] = v;
+      renderCards();
+      renderTotals();
+    });
+  });
+}
+
+function renderTotals(){
+  const tot = total();
+  const bar = document.getElementById('totalbar');
+  bar.innerHTML = `
+    <div class="stat"><div class="v">$${fmt(tot)}</div><div class="l">Total Portfolio Value</div></div>
+    <div class="stat"><div class="v">${assets.length}</div><div class="l">Assets</div></div>
+    <div class="stat"><div class="v" style="color:${COLORS[values().indexOf(Math.max(...values()))]}">${assets[values().indexOf(Math.max(...values()))].ticker}</div><div class="l">Largest Position</div></div>
+  `;
+}
+
+/* ================= FLOW CHART (canvas, animated particles) ================= */
+const canvas = document.getElementById('flowCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+
+function resize(){
+  const rect = canvas.getBoundingClientRect();
+  W = canvas.width = rect.width * devicePixelRatio;
+  H = canvas.height = rect.height * devicePixelRatio;
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+window.addEventListener('resize', resize);
+
+function initParticles(){
+  particles = [];
+  const vals = values();
+  const tot = total() || 1;
+  assets.forEach((a, i) => {
+    const pct = vals[i] / tot;
+    const count = Math.max(6, Math.round(pct * 90));
+    for (let p = 0; p < count; p++){
+      particles.push({
+        assetIndex: i,
+        t: Math.random(),
+        speed: 0.0025 + Math.random() * 0.0035,
+        size: 1.6 + Math.random() * 2.2,
+        offset: (Math.random() - 0.5) * 14
+      });
+    }
+  });
+}
+
+function nodePositions(){
+  const w = canvas.getBoundingClientRect().width;
+  const h = canvas.getBoundingClientRect().height;
+  const cx = w/2, cy = h/2;
+  const n = assets.length;
+  const R = Math.min(w, h) * 0.36;
+  const nodes = [];
+  for (let i=0;i<n;i++){
+    const angle = -Math.PI/2 + (i / n) * Math.PI * 2;
+    nodes.push({ x: cx + R*Math.cos(angle), y: cy + R*Math.sin(angle), angle });
+  }
+  return { cx, cy, nodes, w, h };
+}
+
+function drawFlow(){
+  const rect = canvas.getBoundingClientRect();
+  ctx.clearRect(0,0,rect.width, rect.height);
+
+  const { cx, cy, nodes, w, h } = nodePositions();
+  const vals = values();
+  const tot = total() || 1;
+
+  // subtle backdrop grid glow
+  const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, Math.max(w,h)*0.6);
+  grad.addColorStop(0, 'rgba(139,92,246,0.07)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,w,h);
+
+  // paths (curved) from center to each node, width = allocation
+  assets.forEach((a, i) => {
+    const pct = vals[i] / tot;
+    const node = nodes[i];
+    const midX = (cx + node.x) / 2 + (node.y - cy) * 0.18;
+    const midY = (cy + node.y) / 2 - (node.x - cx) * 0.18;
+
+    const lw = 2 + pct * 46;
+    const grd = ctx.createLinearGradient(cx, cy, node.x, node.y);
+    grd.addColorStop(0, COLORS[i] + '55');
+    grd.addColorStop(1, COLORS[i] + 'cc');
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.quadraticCurveTo(midX, midY, node.x, node.y);
+    ctx.lineWidth = lw;
+    ctx.strokeStyle = grd;
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.5;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  });
+
+  // animated particles along paths
+  particles.forEach(p => {
+    p.t += p.speed;
+    if (p.t > 1) p.t = 0;
+    const i = p.assetIndex;
+    const node = nodes[i];
+    const midX = (cx + node.x) / 2 + (node.y - cy) * 0.18;
+    const midY = (cy + node.y) / 2 - (node.x - cx) * 0.18;
+
+    const t = p.t;
+    const x = (1-t)*(1-t)*cx + 2*(1-t)*t*midX + t*t*node.x;
+    const y = (1-t)*(1-t)*cy + 2*(1-t)*t*midY + t*t*node.y;
+
+    ctx.beginPath();
+    ctx.arc(x + p.offset*0.15, y, p.size, 0, Math.PI*2);
+    ctx.fillStyle = COLORS[i];
+    ctx.shadowColor = COLORS[i];
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+
+  // center node — total portfolio
+  const pulse = 1 + Math.sin(Date.now()/500) * 0.04;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 46*pulse, 0, Math.PI*2);
+  const coreGrad = ctx.createRadialGradient(cx,cy,0,cx,cy,46*pulse);
+  coreGrad.addColorStop(0, 'rgba(212,175,55,0.35)');
+  coreGrad.addColorStop(1, 'rgba(212,175,55,0.02)');
+  ctx.fillStyle = coreGrad;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, 30, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(10,10,12,0.9)';
+  ctx.strokeStyle = 'rgba(212,175,55,0.6)';
+  ctx.lineWidth = 1.5;
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#f1f0f5';
+  ctx.font = '700 11px "JetBrains Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('PORTFOLIO', cx, cy - 2);
+  ctx.font = '600 9px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#d4af37';
+  ctx.fillText('$' + fmt0(tot), cx, cy + 11);
+
+  // asset node labels
+  assets.forEach((a, i) => {
+    const node = nodes[i];
+    const pct = vals[i] / tot * 100;
+
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, 22, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(8,8,10,0.92)';
+    ctx.strokeStyle = COLORS[i];
+    ctx.lineWidth = 2;
+    ctx.shadowColor = COLORS[i];
+    ctx.shadowBlur = 14;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.stroke();
+
+    ctx.fillStyle = COLORS[i];
+    ctx.font = '700 10.5px "JetBrains Mono", monospace';
+    ctx.fillText(a.ticker, node.x, node.y + 4);
+
+    // label outside node
+    const labelDist = 34;
+    const dx = node.x - cx, dy = node.y - cy;
+    const len = Math.sqrt(dx*dx+dy*dy) || 1;
+    const lx = node.x + (dx/len) * labelDist;
+    const ly = node.y + (dy/len) * labelDist;
+
+    ctx.font = '600 11px "Inter", sans-serif';
+    ctx.fillStyle = '#e8e8ec';
+    ctx.fillText(a.name.length > 20 ? a.name.slice(0,18)+'…' : a.name, lx, ly);
+    ctx.font = '500 10px "JetBrains Mono", monospace';
+    ctx.fillStyle = '#8a8794';
+    ctx.fillText(pct.toFixed(1) + '%  ·  $' + fmt0(vals[i]), lx, ly + 13);
+  });
+}
+
+function loop(){
+  drawFlow();
+  requestAnimationFrame(loop);
+}
+
+function init(){
+  resize();
+  initParticles();
+  renderCards();
+  renderTotals();
+  initLivePanel();
+  loop();
+}
+
+// re-init particle distribution when values change materially
+const origRenderCards = renderCards;
+renderCards = function(){
+  origRenderCards();
+  initParticles();
+};
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
